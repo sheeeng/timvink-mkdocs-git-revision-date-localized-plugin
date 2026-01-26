@@ -11,7 +11,6 @@ import re
 import time
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any
 
 from mkdocs import __version__ as mkdocs_version
 from mkdocs.config import config_options
@@ -79,7 +78,7 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
             self.last_revision_commits = {}
             self.created_commits = {}
 
-    def on_config(self, config: config_options.Config, **kwargs) -> dict[str, Any]:
+    def on_config(self, config: MkDocsConfig) -> MkDocsConfig | None:
         """
         Determine which locale to use.
 
@@ -89,19 +88,18 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
         https://www.mkdocs.org/user-guide/plugins/#on_config
 
         Args:
-            config (dict): global configuration object
+            config (MkDocsConfig): global configuration object
 
         Returns:
-            dict: global configuration object
+            MkDocsConfig | None: global configuration object
         """
         if not self.config.get("enabled"):
             return config
 
         assert self.config["type"] in ["date", "datetime", "iso_date", "iso_datetime", "timeago", "custom"]
 
-        self.util = Util(
-            config=self.config, mkdocs_dir=os.path.abspath(os.path.dirname(config.get("config_file_path")))
-        )
+        config_file_path = config.get("config_file_path") or ""
+        self.util = Util(config=self.config, mkdocs_dir=os.path.abspath(os.path.dirname(config_file_path)))
 
         # Save last commit timestamp for entire site
         # Support monorepo/techdocs, which copies the docs_dir to a temporary directory
@@ -115,24 +113,24 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
                 mono_repo_plugin.originalDocsDir
             )
         else:
+            docs_dir = config.get("docs_dir") or ""
             self.last_site_revision_hash, self.last_site_revision_timestamp = self.util.get_git_commit_timestamp(
-                config.get("docs_dir")
+                docs_dir
             )
 
         # Get locale from plugin configuration
         plugin_locale = self.config.get("locale", None)
 
         # Get locale from theme configuration
-        if "theme" in config and "language" in config.get("theme"):
-            custom_theme = config.get("theme")
+        custom_theme = config.get("theme")
+        if custom_theme is not None and "language" in custom_theme:
             theme_locale = (
                 custom_theme["language"]
                 if Version(mkdocs_version) >= Version("1.6.0")
                 else custom_theme._vars.get("language")
             )
             logging.debug(f"Locale '{theme_locale}' extracted from the custom theme: '{custom_theme.name}'")
-        elif "theme" in config and "locale" in config.get("theme"):
-            custom_theme = config.get("theme")
+        elif custom_theme is not None and "locale" in custom_theme:
             theme_locale = (
                 custom_theme.locale if Version(mkdocs_version) >= Version("1.6.0") else custom_theme._vars.get("locale")
             )
@@ -284,10 +282,7 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
         # Find the locale
 
         # First prio is use mkdocs-static-i18n locale if set
-        try:
-            locale = page.file.locale
-        except AttributeError:
-            locale = None
+        locale = getattr(page.file, "locale", None)
 
         # Second prio is a frontmatter variable 'locale' set in the markdown
         if not locale:
@@ -306,20 +301,23 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
         if getattr(page.file, "generated_by", None):
             last_revision_hash, last_revision_timestamp = "", int(time.time())
         else:
+            # abs_src_path should always be set for documentation pages
+            assert page.file.abs_src_path is not None
+            abs_src_path = page.file.abs_src_path
             # Use cached results if parallel processing is enabled and cache is populated
             if self.config.get("enable_parallel_processing") and self.last_revision_commits:
                 last_revision_hash, last_revision_timestamp = self.last_revision_commits.get(
-                    str(Path(page.file.abs_src_path).absolute()), (None, None)
+                    str(Path(abs_src_path).absolute()), (None, None)
                 )
                 if last_revision_timestamp is None:
                     last_revision_hash, last_revision_timestamp = self.util.get_git_commit_timestamp(
-                        path=page.file.abs_src_path,
+                        path=abs_src_path,
                         is_first_commit=False,
                     )
             else:
                 # Directly call git if parallel processing is disabled or cache is empty
                 last_revision_hash, last_revision_timestamp = self.util.get_git_commit_timestamp(
-                    path=page.file.abs_src_path,
+                    path=abs_src_path,
                     is_first_commit=False,
                 )
 
@@ -390,6 +388,9 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
         if getattr(page.file, "generated_by", None):
             first_revision_hash, first_revision_timestamp = "", int(time.time())
         else:
+            # abs_src_path should always be set for documentation pages
+            assert page.file.abs_src_path is not None
+            abs_src_path = page.file.abs_src_path
             # Use cached results if parallel processing is enabled and cache is populated
             if (
                 self.config.get("enable_creation_date")
@@ -397,17 +398,17 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
                 and self.created_commits
             ):
                 first_revision_hash, first_revision_timestamp = self.created_commits.get(
-                    str(Path(page.file.abs_src_path).absolute()), (None, None)
+                    str(Path(abs_src_path).absolute()), (None, None)
                 )
                 if first_revision_timestamp is None:
                     first_revision_hash, first_revision_timestamp = self.util.get_git_commit_timestamp(
-                        path=page.file.abs_src_path,
+                        path=abs_src_path,
                         is_first_commit=True,
                     )
             else:
                 # Directly call git if parallel processing is disabled or cache is empty
                 first_revision_hash, first_revision_timestamp = self.util.get_git_commit_timestamp(
-                    path=page.file.abs_src_path,
+                    path=abs_src_path,
                     is_first_commit=True,
                 )
 
@@ -451,7 +452,7 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
 
         return markdown
 
-    def on_post_build(self, config: dict[str, Any], **kwargs) -> None:
+    def on_post_build(self, *, config: MkDocsConfig) -> None:
         """
         Run on post build.
 

@@ -124,4 +124,11 @@ dev = [
     "pytest-cov>=5.0.0",
     "ruff",
     "pre-commit>=4.5.1",
+    "ty>=0.0.13",
 ]
+
+[tool.ty.environment]
+python-version = "3.10"
+
+[tool.ty.src]
+include = ["src/**/*.py"]

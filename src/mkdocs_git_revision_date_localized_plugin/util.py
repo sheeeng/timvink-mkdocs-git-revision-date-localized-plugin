@@ -32,8 +32,11 @@ class Util:
         self.repo_cache = {}
 
         ignore_commits_file = self.config.get("ignored_commits_file")
-        ignore_commits_filepath = Path(mkdocs_dir) / ignore_commits_file if ignore_commits_file else None
-        self.ignored_commits = self.parse_git_ignore_revs(ignore_commits_filepath) if ignore_commits_file else []
+        if ignore_commits_file:
+            ignore_commits_filepath = Path(mkdocs_dir) / ignore_commits_file
+            self.ignored_commits = self.parse_git_ignore_revs(ignore_commits_filepath)
+        else:
+            self.ignored_commits: list[str] = []
 
     def _get_repo(self, path: str) -> Git:
         if not os.path.isdir(path):
@@ -204,9 +207,9 @@ class Util:
         """
         date_formats = get_date_formats(
             unix_timestamp=commit_timestamp,
-            time_zone=self.config.get("timezone"),
+            time_zone=self.config.get("timezone") or "UTC",
             locale=locale,
-            custom_format=self.config.get("custom_format"),
+            custom_format=self.config.get("custom_format") or "%d. %B %Y",
         )
         if add_spans:
             date_formats = self.add_spans(date_formats)
@@ -226,7 +229,7 @@ class Util:
         return date_formats
 
     @staticmethod
-    def parse_git_ignore_revs(filename: str) -> list[str]:
+    def parse_git_ignore_revs(filename: str | Path) -> list[str]:
         """
         Parses a file that is the same format as git's blame.ignoreRevsFile and return the list of commit hashes.
 
