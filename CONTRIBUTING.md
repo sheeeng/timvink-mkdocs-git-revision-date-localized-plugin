@@ -9,7 +9,21 @@ Thanks for considering to contribute to this project! Some guidelines:
 
 ## Setup
 
-We use [uv to manage dependencies](https://docs.astral.sh/uv/getting-started/installation/). 
+We use [uv to manage dependencies](https://docs.astral.sh/uv/getting-started/installation/).
+
+## Pre-commit Hooks
+
+We use [prek](https://prek.j178.dev/) to manage pre-commit hooks. To install the hooks:
+
+```bash
+uv run prek install
+```
+
+To run the hooks on all files:
+
+```bash
+uv run prek run --all-files
+```
 
 ## Unit Tests
 
