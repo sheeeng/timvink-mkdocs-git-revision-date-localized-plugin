@@ -6,27 +6,25 @@ https://github.com/timvink/mkdocs-git-revision-date-localized-plugin/
 """
 
 import logging
-import re
 import os
+import re
 import time
+from collections import OrderedDict
 from pathlib import Path
+from typing import Any
 
 from mkdocs import __version__ as mkdocs_version
 from mkdocs.config import config_options
+from mkdocs.config.defaults import MkDocsConfig
+from mkdocs.exceptions import ConfigurationError
 from mkdocs.plugins import BasePlugin
+from mkdocs.structure.files import Files
 from mkdocs.structure.nav import Page
 from mkdocs.utils import copy_file
-from mkdocs.exceptions import ConfigurationError
-from mkdocs.config.defaults import MkDocsConfig
-from mkdocs.structure.files import Files
-
-from mkdocs_git_revision_date_localized_plugin.util import Util
-from mkdocs_git_revision_date_localized_plugin.exclude import exclude
-
-from typing import Any, Dict, Optional
-from collections import OrderedDict
-
 from packaging.version import Version
+
+from mkdocs_git_revision_date_localized_plugin.exclude import exclude
+from mkdocs_git_revision_date_localized_plugin.util import Util
 
 HERE = Path(__file__).parent.absolute()
 
@@ -63,8 +61,8 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
         """
         Run on startup.
 
-        Note that "The presence of an on_startup method (even if empty) 
-        migrates the plugin to the new system where the plugin object is 
+        Note that "The presence of an on_startup method (even if empty)
+        migrates the plugin to the new system where the plugin object is
         kept across builds within one mkdocs serve."
 
         Args:
@@ -75,13 +73,13 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
         # dirty=True means it's a rebuild triggered by file changes
         # dirty=False means it's a clean/initial build
         self.is_serve_dirty_build = dirty
-        
+
         # Clear cache on clean builds to ensure fresh data
         if not dirty:
             self.last_revision_commits = {}
             self.created_commits = {}
 
-    def on_config(self, config: config_options.Config, **kwargs) -> Dict[str, Any]:
+    def on_config(self, config: config_options.Config, **kwargs) -> dict[str, Any]:
         """
         Determine which locale to use.
 
@@ -108,7 +106,11 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
         # Save last commit timestamp for entire site
         # Support monorepo/techdocs, which copies the docs_dir to a temporary directory
         mono_repo_plugin = config.get("plugins", {}).get("monorepo", None)
-        if mono_repo_plugin is not None and hasattr(mono_repo_plugin, "originalDocsDir") and mono_repo_plugin.originalDocsDir is not None:
+        if (
+            mono_repo_plugin is not None
+            and hasattr(mono_repo_plugin, "originalDocsDir")
+            and mono_repo_plugin.originalDocsDir is not None
+        ):
             self.last_site_revision_hash, self.last_site_revision_timestamp = self.util.get_git_commit_timestamp(
                 mono_repo_plugin.originalDocsDir
             )
@@ -128,13 +130,13 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
                 if Version(mkdocs_version) >= Version("1.6.0")
                 else custom_theme._vars.get("language")
             )
-            logging.debug("Locale '%s' extracted from the custom theme: '%s'" % (theme_locale, custom_theme.name))
+            logging.debug(f"Locale '{theme_locale}' extracted from the custom theme: '{custom_theme.name}'")
         elif "theme" in config and "locale" in config.get("theme"):
             custom_theme = config.get("theme")
             theme_locale = (
                 custom_theme.locale if Version(mkdocs_version) >= Version("1.6.0") else custom_theme._vars.get("locale")
             )
-            logging.debug("Locale '%s' extracted from the custom theme: '%s'" % (theme_locale, custom_theme.name))
+            logging.debug(f"Locale '{theme_locale}' extracted from the custom theme: '{custom_theme.name}'")
         else:
             theme_locale = None
             logging.debug("No locale found in theme configuration (or no custom theme set)")
@@ -142,15 +144,15 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
         # First prio: plugin locale
         if plugin_locale:
             locale_set = plugin_locale
-            logging.debug("Using locale from plugin configuration: %s" % locale_set)
+            logging.debug(f"Using locale from plugin configuration: {locale_set}")
         # Second prio: theme locale
         elif theme_locale:
             locale_set = theme_locale
-            logging.debug("Locale not set in plugin. Fallback to theme configuration: %s" % locale_set)
+            logging.debug(f"Locale not set in plugin. Fallback to theme configuration: {locale_set}")
         # Lastly, fallback is English
         else:
             locale_set = "en"
-            logging.debug("No locale set. Fallback to: %s" % locale_set)
+            logging.debug(f"No locale set. Fallback to: {locale_set}")
 
         # Validate locale
         locale_set = str(locale_set)
@@ -174,8 +176,9 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
 
         return config
 
-    def parallel_compute_commit_timestamps(self, files, original_source: Optional[Dict] = None, is_first_commit=False):
+    def parallel_compute_commit_timestamps(self, files, original_source: dict | None = None, is_first_commit=False):
         import multiprocessing
+
         pool = multiprocessing.Pool(processes=min(10, multiprocessing.cpu_count()))
         results = []
         for f in files:
@@ -190,11 +193,11 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
             else:
                 temp_abs_src_path = str(Path(f.abs_src_path).absolute())
                 abs_src_path = f.abs_src_path
-                
+
                 # Support plugins like monorepo that might have moved the files from the original source that is under git
                 if original_source and abs_src_path in original_source:
                     abs_src_path = original_source[abs_src_path]
-                
+
                 assert Path(abs_src_path).exists()
                 abs_src_path = str(Path(abs_src_path).absolute())
                 result = pool.apply_async(self.util.get_git_commit_timestamp, args=(abs_src_path, is_first_commit))
@@ -222,7 +225,9 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
         # This avoids the overhead of creating a new multiprocessing pool on every file save
         # The cache from the initial build will be reused
         if self.is_serve_dirty_build:
-            logging.debug("[git-revision-date-localized] Skipping parallel processing on incremental rebuild, using cache")
+            logging.debug(
+                "[git-revision-date-localized] Skipping parallel processing on incremental rebuild, using cache"
+            )
             return
 
         # Support monorepo/techdocs, which copies the docs_dir to a temporary directory
@@ -234,13 +239,18 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
 
         try:
             if not self.last_revision_commits:
-               self.parallel_compute_commit_timestamps(files=files, original_source=original_source, is_first_commit=False)
+                self.parallel_compute_commit_timestamps(
+                    files=files, original_source=original_source, is_first_commit=False
+                )
             if not self.created_commits:
-                self.parallel_compute_commit_timestamps(files=files, original_source=original_source, is_first_commit=True)
+                self.parallel_compute_commit_timestamps(
+                    files=files, original_source=original_source, is_first_commit=True
+                )
         except Exception as e:
-            logging.warning(f"Parallel processing failed: {str(e)}.\n To fall back to serial processing, use 'enable_parallel_processing: False' setting.")
+            logging.warning(
+                f"Parallel processing failed: {str(e)}.\n To fall back to serial processing, use 'enable_parallel_processing: False' setting."
+            )
             raise e
-            
 
     def on_page_markdown(self, markdown: str, page: Page, config: config_options.Config, files, **kwargs) -> str:
         """
@@ -334,7 +344,7 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
             last_revision_timestamp, locale=locale, add_spans=False
         )
         for date_type, date_string in revision_dates_raw.items():
-            page.meta["git_revision_date_localized_raw_%s" % date_type] = date_string
+            page.meta[f"git_revision_date_localized_raw_{date_type}"] = date_string
 
         # Replace any occurances in markdown page
         markdown = re.sub(
@@ -360,7 +370,7 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
             self.last_site_revision_timestamp, locale=locale, add_spans=False
         )
         for date_type, date_string in site_dates_raw.items():
-            page.meta["git_site_revision_date_localized_raw_%s" % date_type] = date_string
+            page.meta[f"git_site_revision_date_localized_raw_{date_type}"] = date_string
 
         # Replace any occurances in markdown page
         markdown = re.sub(
@@ -381,7 +391,11 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
             first_revision_hash, first_revision_timestamp = "", int(time.time())
         else:
             # Use cached results if parallel processing is enabled and cache is populated
-            if self.config.get("enable_creation_date") and self.config.get("enable_parallel_processing") and self.created_commits:
+            if (
+                self.config.get("enable_creation_date")
+                and self.config.get("enable_parallel_processing")
+                and self.created_commits
+            ):
                 first_revision_hash, first_revision_timestamp = self.created_commits.get(
                     str(Path(page.file.abs_src_path).absolute()), (None, None)
                 )
@@ -399,7 +413,7 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
 
         if first_revision_timestamp > last_revision_timestamp:
             # See also https://github.com/timvink/mkdocs-git-revision-date-localized-plugin/issues/111
-            msg = "First revision timestamp is older than last revision timestamp for page %s. " % page.file.src_path
+            msg = f"First revision timestamp is older than last revision timestamp for page {page.file.src_path}. "
             msg += "This can be due to a quirk in `git` follow behaviour. You can try to set `enable_git_follow: false` in the plugin configuration."
             logging.warning(msg)
             first_revision_hash, first_revision_timestamp = last_revision_hash, last_revision_timestamp
@@ -425,7 +439,7 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
             first_revision_timestamp, locale=locale, add_spans=False
         )
         for date_type, date_string in creation_dates_raw.items():
-            page.meta["git_creation_date_localized_raw_%s" % date_type] = date_string
+            page.meta[f"git_creation_date_localized_raw_{date_type}"] = date_string
 
         # Replace any occurances in markdown page
         markdown = re.sub(
@@ -437,7 +451,7 @@ class GitRevisionDateLocalizedPlugin(BasePlugin):
 
         return markdown
 
-    def on_post_build(self, config: Dict[str, Any], **kwargs) -> None:
+    def on_post_build(self, config: dict[str, Any], **kwargs) -> None:
         """
         Run on post build.
 

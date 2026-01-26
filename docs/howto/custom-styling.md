@@ -1,6 +1,6 @@
 # Apply custom styling
 
-You can change the appearance of the revision dates by [including extra CSS](https://www.mkdocs.org/user-guide/configuration/#extra_css) to your mkdocs site. 
+You can change the appearance of the revision dates by [including extra CSS](https://www.mkdocs.org/user-guide/configuration/#extra_css) to your mkdocs site.
 
 ## CSS Classes
 
@@ -14,7 +14,7 @@ For example when `type: datetime` is set, using the following in a markdown file
 Could output the following HTML:
 
 ```django
-Last update: 
+Last update:
 <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime">28 November, 2019 13:57:28</span>
 ```
 
@@ -34,4 +34,3 @@ Making all revision dates red is as easy as:
     extra_css:
         css/extra.css
     ```
-

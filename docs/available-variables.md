@@ -25,7 +25,7 @@ If you do not want to include revision dates manually in each markdown file, or 
 - `page.meta.git_creation_date_localized`
 - `page.meta.git_revision_date_localized_raw_date`
 
-To allow for more flexibility when overriding a theme there are also variables for each different `type` available (regardless of the setting for `type` in [options](options.md)), where the output is also not wrapped in `<span>` elements (so you can do the CSS styling yourself): 
+To allow for more flexibility when overriding a theme there are also variables for each different `type` available (regardless of the setting for `type` in [options](options.md)), where the output is also not wrapped in `<span>` elements (so you can do the CSS styling yourself):
 
 - `page.meta.git_revision_date_localized_raw_date`
 - `page.meta.git_revision_date_localized_raw_datetime`

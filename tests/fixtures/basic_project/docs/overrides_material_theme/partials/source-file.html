@@ -30,7 +30,7 @@
       {{ label }}: {{ page.meta.git_revision_date_localized }}
 
       {% if page.meta.git_creation_date_localized %}
-        <br />{{ lang.t("source.file.date.created") }}: {{ page.meta.git_creation_date_localized }} 
+        <br />{{ lang.t("source.file.date.created") }}: {{ page.meta.git_creation_date_localized }}
       {% endif %}
 
     <!-- mkdocs-git-revision-date-plugin -->
@@ -41,6 +41,6 @@
     {% if page.meta.git_site_revision_date_localized %}
     <br />Site last updated: {{ page.meta.git_site_revision_date_localized }}
     {% endif %}
-    
+
   </small>
 </div>

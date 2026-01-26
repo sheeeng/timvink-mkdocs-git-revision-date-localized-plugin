@@ -39,5 +39,5 @@ jobs:
       uses: pypa/gh-action-pypi-publish@release/v1
 
     - name: Deploy mkdocs site
-      run: | 
+      run: |
         uv run mkdocs gh-deploy --force

@@ -4,7 +4,7 @@ You can [customize an existing theme](https://www.mkdocs.org/user-guide/styling-
 
 ## Example: default `mkdocs` theme
 
-To add a revision date to the default `mkdocs` theme, add a `overrides/partials` folder to your `docs` folder and update your `mkdocs.yml` file. 
+To add a revision date to the default `mkdocs` theme, add a `overrides/partials` folder to your `docs` folder and update your `mkdocs.yml` file.
 Then you can extend the base `mkdocs` theme by adding a new file `docs/overrides/content.html`:
 
 === ":octicons-file-code-16: mkdocs.yml"
@@ -18,7 +18,7 @@ Then you can extend the base `mkdocs` theme by adding a new file `docs/overrides
 === ":octicons-file-code-16: docs/overrides/content.html"
 
     ```html
-    <!-- Overwrites content.html base mkdocs theme, taken from 
+    <!-- Overwrites content.html base mkdocs theme, taken from
     https://github.com/mkdocs/mkdocs/blob/master/mkdocs/themes/mkdocs/content.html -->
 
     {% if page.meta.source %}
@@ -42,7 +42,7 @@ Then you can extend the base `mkdocs` theme by adding a new file `docs/overrides
 
 ## Example: `mkdocs-material` theme
 
-[mkdocs-material](https://squidfunk.github.io/mkdocs-material/) has built-in support for `git_revision_date_localized` and `git_created_date_localized`. You can see that when viewing their [`source-file.html`](https://github.com/squidfunk/mkdocs-material/blob/master/src/partials/source-file.html) partial. 
+[mkdocs-material](https://squidfunk.github.io/mkdocs-material/) has built-in support for `git_revision_date_localized` and `git_created_date_localized`. You can see that when viewing their [`source-file.html`](https://github.com/squidfunk/mkdocs-material/blob/master/src/partials/source-file.html) partial.
 
 If you want, you can customize further by [extending the mkdocs-material theme](https://squidfunk.github.io/mkdocs-material/customization/#extending-the-theme) and overriding the `source-file.html` partial as follows:
 
@@ -59,9 +59,9 @@ If you want, you can customize further by [extending the mkdocs-material theme](
     ```html
     {% import "partials/language.html" as lang with context %}
 
-    <!-- taken from 
+    <!-- taken from
     https://github.com/squidfunk/mkdocs-material/blob/master/src/partials/source-file.html -->
-    
+
     <hr />
     <div class="md-source-file">
     <small>
@@ -85,7 +85,7 @@ If you want, you can customize further by [extending the mkdocs-material theme](
     </div>
     ```
 
-[mkdocs-material](https://squidfunk.github.io/mkdocs-material/) also supports [custom translations](https://squidfunk.github.io/mkdocs-material/setup/changing-the-language/#custom-translations) that you can use to specify alternative translations for `source.file.date.updated` ("Last updated") and `source.file.date.created` ("Created"). 
+[mkdocs-material](https://squidfunk.github.io/mkdocs-material/) also supports [custom translations](https://squidfunk.github.io/mkdocs-material/setup/changing-the-language/#custom-translations) that you can use to specify alternative translations for `source.file.date.updated` ("Last updated") and `source.file.date.created` ("Created").
 
 ## Example: List last updated pages
 

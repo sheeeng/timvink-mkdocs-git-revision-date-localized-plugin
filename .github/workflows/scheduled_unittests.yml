@@ -24,4 +24,3 @@ jobs:
         git config --global user.email "githubaction@gmail.com"
         uv sync --upgrade
         uv run pytest
-  
